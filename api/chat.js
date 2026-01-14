@@ -39,7 +39,7 @@ export default async function handler(req, res) {
             ${historyText}
         `;
             const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
+                model: 'gemini-2.0-flash',
                 contents: prompt,
             });
             return res.status(200).json({ memory: response.text || "" });
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
             // Since we are stateless, we re-hydrate the chat with history + new message
             // Actually, for single turn with history context:
             const chat = ai.chats.create({
-                model: 'gemini-3-flash-preview',
+                model: 'gemini-2.0-flash',
                 config: { systemInstruction },
                 history: history || []
             });

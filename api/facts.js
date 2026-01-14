@@ -20,8 +20,20 @@ export default async function handler(req, res) {
 
     try {
         if (type === 'academy') {
+            const prompt = `
+        Придумай 4 уникальных и профессиональных совета/факта для "Академии Вкуса". 
+        Это должны быть продвинутые знания для любителей коктейлей.
+        Категории: [ТЕХНИКА, ИСТОРИЯ, ТРЕНД, СЕКРЕТ ШЕФА].
+        Язык: РУССКИЙ.
+        Для каждого укажи: 
+        - category (одну из списка выше)
+        - title (яркий заголовок)
+        - text (глубокий, но лаконичный совет до 140 символов)
+        - icon (подходящий эмодзи)
+      `;
+
             const response = await ai.models.generateContent({
-                model: 'gemini-3-flash-preview',
+                model: 'gemini-2.0-flash',
                 contents: prompt,
                 config: {
                     responseMimeType: "application/json",
@@ -75,7 +87,7 @@ export default async function handler(req, res) {
       `;
 
             const response = await ai.models.generateContent({
-                model: 'gemini-flash-lite-latest',
+                model: 'gemini-2.0-flash-lite',
                 contents: prompt,
                 config: {
                     temperature: 1.3,
