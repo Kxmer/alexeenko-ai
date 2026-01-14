@@ -1,9 +1,7 @@
+const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 
-import { GoogleGenAI, Type } from "@google/genai";
-
-export default async function handler(req, res) {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
+module.exports = async function handler(req, res) {
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
@@ -24,7 +22,17 @@ export default async function handler(req, res) {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
-    const ai = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+        model: 'gemini-2.0-flash',
+        generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: {
+                type: SchemaType.ARRAY,
+                items: { type: SchemaType.STRING }
+            }
+        }
+    });
 
     const prompt = `
     Проанализируй это изображение. Найди на нем все продукты, напитки и алкоголь, которые можно использовать в качестве ингредиентов для коктейлей.
@@ -34,31 +42,21 @@ export default async function handler(req, res) {
   `;
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
-            contents: [
-                {
-                    inlineData: {
-                        mimeType: 'image/jpeg', // Assuming jpeg, could take from request if needed
-                        data: base64Image,
-                    },
+        const result = await model.generateContent([
+            {
+                inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: base64Image,
                 },
-                { text: prompt },
-            ],
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.ARRAY,
-                    items: { type: Type.STRING }
-                }
-            }
-        });
+            },
+            prompt,
+        ]);
 
-        const text = response.text || '[]';
+        const text = result.response.text() || '[]';
         const data = JSON.parse(text);
         return res.status(200).json(data);
     } catch (error) {
         console.error("API Error:", error);
         return res.status(500).json({ error: 'Failed to analyze image', details: error.message });
     }
-}
+};

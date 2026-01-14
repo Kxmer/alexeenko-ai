@@ -1,8 +1,7 @@
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-import { GoogleGenAI } from "@google/genai";
-
-export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Credentials', true);
+module.exports = async function handler(req, res) {
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
@@ -18,26 +17,24 @@ export default async function handler(req, res) {
 
     const { base64Audio, mimeType = 'audio/webm' } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
-    const ai = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     const prompt = "Прослушай это аудиосообщение и напиши дословно, что сказал пользователь. Верни только текст транскрипции на языке говорящего (скорее всего Русский). Если аудио пустое или неразборчивое, верни пустую строку.";
 
     try {
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
-            contents: [
-                {
-                    inlineData: {
-                        mimeType: mimeType,
-                        data: base64Audio,
-                    },
+        const result = await model.generateContent([
+            {
+                inlineData: {
+                    mimeType: mimeType,
+                    data: base64Audio,
                 },
-                { text: prompt },
-            ],
-        });
-        return res.status(200).json({ text: response.text?.trim() || "" });
+            },
+            prompt,
+        ]);
+        return res.status(200).json({ text: result.response.text()?.trim() || "" });
     } catch (error) {
         console.error("Transcription failed", error);
         return res.status(500).json({ error: 'Transcription failed' });
     }
-}
+};

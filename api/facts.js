@@ -1,9 +1,7 @@
+const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 
-import { GoogleGenAI, Type } from "@google/genai";
-
-export default async function handler(req, res) {
-    // Enable CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
+module.exports = async function handler(req, res) {
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
@@ -16,10 +14,30 @@ export default async function handler(req, res) {
     const { type } = req.query; // 'academy' or 'random'
 
     const apiKey = process.env.GEMINI_API_KEY;
-    const ai = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
 
     try {
         if (type === 'academy') {
+            const model = genAI.getGenerativeModel({
+                model: 'gemini-2.0-flash',
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: SchemaType.ARRAY,
+                        items: {
+                            type: SchemaType.OBJECT,
+                            properties: {
+                                title: { type: SchemaType.STRING },
+                                icon: { type: SchemaType.STRING },
+                                text: { type: SchemaType.STRING },
+                                category: { type: SchemaType.STRING }
+                            },
+                            required: ['title', 'icon', 'text', 'category']
+                        }
+                    }
+                }
+            });
+
             const prompt = `
         Придумай 4 уникальных и профессиональных совета/факта для "Академии Вкуса". 
         Это должны быть продвинутые знания для любителей коктейлей.
@@ -32,29 +50,18 @@ export default async function handler(req, res) {
         - icon (подходящий эмодзи)
       `;
 
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash',
-                contents: prompt,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.ARRAY,
-                        items: {
-                            type: Type.OBJECT,
-                            properties: {
-                                title: { type: Type.STRING },
-                                icon: { type: Type.STRING },
-                                text: { type: Type.STRING },
-                                category: { type: Type.STRING }
-                            },
-                            required: ['title', 'icon', 'text', 'category']
-                        }
-                    }
-                }
-            });
-            return res.status(200).json(JSON.parse(response.text || '[]'));
+            const result = await model.generateContent(prompt);
+            return res.status(200).json(JSON.parse(result.response.text() || '[]'));
 
         } else if (type === 'random') {
+            const model = genAI.getGenerativeModel({
+                model: 'gemini-2.0-flash',
+                generationConfig: {
+                    temperature: 1.3,
+                    maxOutputTokens: 60,
+                }
+            });
+
             const topics = [
                 "самый дорогой ингредиент в современном баре",
                 "микробиология ферментации в коктейлях",
@@ -86,15 +93,8 @@ export default async function handler(req, res) {
         4. Язык: Живой Русский.
       `;
 
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash-lite',
-                contents: prompt,
-                config: {
-                    temperature: 1.3,
-                    maxOutputTokens: 60,
-                }
-            });
-            return res.status(200).json({ fact: response.text });
+            const result = await model.generateContent(prompt);
+            return res.status(200).json({ fact: result.response.text() });
         } else {
             return res.status(400).json({ error: "Invalid type param" });
         }
@@ -103,4 +103,4 @@ export default async function handler(req, res) {
         console.error("API Error:", error);
         return res.status(500).json({ error: 'Failed to generate content', details: error.message });
     }
-}
+};

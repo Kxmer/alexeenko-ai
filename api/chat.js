@@ -1,8 +1,7 @@
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-import { GoogleGenAI } from "@google/genai";
-
-export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Credentials', true);
+module.exports = async function handler(req, res) {
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
@@ -16,13 +15,13 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { history, message, userProfile, action } = req.body; // action: 'chat' or 'extract_memory'
+    const { history, message, userProfile, action } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
-    const ai = new GoogleGenAI({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
     try {
         if (action === 'extract_memory') {
-            // Формируем текст истории для анализа
             const historyText = history.map(h => `${h.role}: ${h.parts[0].text}`).join('\n');
 
             const prompt = `
@@ -38,13 +37,9 @@ export default async function handler(req, res) {
             ДИАЛОГ:
             ${historyText}
         `;
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash',
-                contents: prompt,
-            });
-            return res.status(200).json({ memory: response.text || "" });
+            const result = await model.generateContent(prompt);
+            return res.status(200).json({ memory: result.response.text() || "" });
         } else {
-            // Chat action
             const systemInstruction = `Ты — ALEXEENKO AI, легендарный бармен. Твой стиль — живое, человечное общение. 
         
         ИНФОРМАЦИЯ О ГОСТЕ (твоя память):
@@ -56,18 +51,23 @@ export default async function handler(req, res) {
         3. Если гость говорит "как обычно" или "ты же знаешь, что я люблю", используй данные из блока ПАМЯТИ выше.
         4. Будь харизматичным, но не навязчивым. Используй живой язык, эмодзи по делу и двойные переносы строк между логическими блоками.`;
 
-            // Since we are stateless, we re-hydrate the chat with history + new message
-            // Actually, for single turn with history context:
-            const chat = ai.chats.create({
-                model: 'gemini-2.0-flash',
-                config: { systemInstruction },
-                history: history || []
+            // Build chat history for the model
+            const chatHistory = (history || []).map(h => ({
+                role: h.role,
+                parts: h.parts.map(p => ({ text: p.text }))
+            }));
+
+            const chat = model.startChat({
+                history: chatHistory,
+                systemInstruction: systemInstruction,
             });
 
             const result = await chat.sendMessage(message);
+            const responseText = result.response.text();
+
             return res.status(200).json({
-                text: result.response.text(),
-                history: [...(history || []), { role: 'user', parts: [{ text: message }] }, { role: 'model', parts: [{ text: result.response.text() }] }]
+                text: responseText,
+                history: [...(history || []), { role: 'user', parts: [{ text: message }] }, { role: 'model', parts: [{ text: responseText }] }]
             });
         }
 
@@ -75,4 +75,4 @@ export default async function handler(req, res) {
         console.error("API Error:", error);
         return res.status(500).json({ error: 'Chat failed', details: error.message });
     }
-}
+};

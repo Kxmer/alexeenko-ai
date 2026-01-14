@@ -1,9 +1,8 @@
+const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 
-import { GoogleGenAI, Type } from "@google/genai";
-
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Enable CORS
-  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
@@ -28,7 +27,55 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server configuration error: Missing API Key' });
   }
 
-  const ai = new GoogleGenAI({ apiKey });
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          classics: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                name: { type: SchemaType.STRING },
+                description: { type: SchemaType.STRING },
+                ingredients: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                instructions: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                glassType: { type: SchemaType.STRING },
+                method: { type: SchemaType.STRING },
+                flavorProfile: { type: SchemaType.STRING },
+                colorHex: { type: SchemaType.STRING },
+                mixologistReasoning: { type: SchemaType.STRING }
+              },
+              required: ['name', 'description', 'ingredients', 'instructions', 'glassType', 'method', 'flavorProfile', 'colorHex', 'mixologistReasoning']
+            }
+          },
+          aiCreations: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                name: { type: SchemaType.STRING },
+                description: { type: SchemaType.STRING },
+                ingredients: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                instructions: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+                glassType: { type: SchemaType.STRING },
+                method: { type: SchemaType.STRING },
+                flavorProfile: { type: SchemaType.STRING },
+                colorHex: { type: SchemaType.STRING },
+                mixologistReasoning: { type: SchemaType.STRING }
+              },
+              required: ['name', 'description', 'ingredients', 'instructions', 'glassType', 'method', 'flavorProfile', 'colorHex', 'mixologistReasoning']
+            }
+          }
+        },
+        required: ['classics', 'aiCreations']
+      }
+    }
+  });
 
   const prompt = `
     Ты — легендарный шеф-бармен мирового уровня, эксперт по миксологии и балансу вкусов. 
@@ -41,68 +88,19 @@ export default async function handler(req, res) {
     4. Техника: Указывай конкретный метод (Shake, Stir, Build, Muddle, Throwing).
     5. Презентация: Опиши бокал и профессиональный гарнир.
     6. Описание: Напиши краткое, но "вкусное" описание, как в меню дорогого миксологического бара.
-    7. Обоснование (mixologistReasoning): Для каждого коктейля (особенно авторского) напиши экспертное обоснование баланса. Почему эти ингредиенты работают вместе? Как они влияют на вкусовые рецепторы? Укажи на взаимодействие кислотности, сладости и крепости. Это должно быть убедительно для профессионального бармена.
+    7. Обоснование (mixologistReasoning): Для каждого коктейля (особенно авторского) напиши экспертное обоснование баланса.
     8. Цвет: HEX-код должен максимально точно передавать реальный цвет готового напитка.
 
     Язык ответа: РУССКИЙ.
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash', // Using 2.0 Flash as it's generally available and fast
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            classics: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  ingredients: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  instructions: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  glassType: { type: Type.STRING },
-                  method: { type: Type.STRING },
-                  flavorProfile: { type: Type.STRING },
-                  colorHex: { type: Type.STRING },
-                  mixologistReasoning: { type: Type.STRING }
-                },
-                required: ['name', 'description', 'ingredients', 'instructions', 'glassType', 'method', 'flavorProfile', 'colorHex', 'mixologistReasoning']
-              }
-            },
-            aiCreations: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  name: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  ingredients: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  instructions: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  glassType: { type: Type.STRING },
-                  method: { type: Type.STRING },
-                  flavorProfile: { type: Type.STRING },
-                  colorHex: { type: Type.STRING },
-                  mixologistReasoning: { type: Type.STRING }
-                },
-                required: ['name', 'description', 'ingredients', 'instructions', 'glassType', 'method', 'flavorProfile', 'colorHex', 'mixologistReasoning']
-              }
-            }
-          },
-          required: ['classics', 'aiCreations']
-        }
-      }
-    });
-
-    const text = response.text || '{}';
+    const result = await model.generateContent(prompt);
+    const text = result.response.text() || '{}';
     const data = JSON.parse(text);
     return res.status(200).json(data);
   } catch (error) {
     console.error("API Error:", error);
     return res.status(500).json({ error: 'Failed to generate cocktails', details: error.message });
   }
-}
+};
