@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash', // Using 2.0 Flash as it's generally available and fast
+      model: 'gemini-1.5-flash', // Switched to stable 1.5 Flash
       contents: prompt,
       config: {
         responseMimeType: "application/json",
