@@ -1,0 +1,17 @@
+{
+    "functions": {
+        "api/**/*.js": {
+            "maxDuration": 60
+        }
+    },
+    "rewrites": [
+        {
+            "source": "/api/:match*",
+            "destination": "/api/:match*"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}

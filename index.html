@@ -1,0 +1,382 @@
+
+<!DOCTYPE html>
+<html lang="ru" class="dark" style="scrollbar-gutter: stable; overflow-x: hidden;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>ALEXEENKO AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+      
+      :root {
+        /* Light Theme Palette */
+        --bg-base: #f8fafc;
+        --blob-1: #c7d2fe; /* Indigo 200 */
+        --blob-2: #e9d5ff; /* Purple 200 */
+        --blob-3: #bae6fd; /* Sky 200 */
+        --noise-opacity: 0.35;
+      }
+
+      html.dark {
+        /* Dark Theme Palette */
+        --bg-base: #020617; /* Slate 950 */
+        --blob-1: #4338ca; /* Indigo 700 */
+        --blob-2: #3b0764; /* Purple 950 */
+        --blob-3: #1e3a8a; /* Blue 900 */
+        --noise-opacity: 0.05;
+      }
+
+      html, body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+        position: relative;
+        margin: 0;
+        padding: 0;
+        background-color: var(--bg-base);
+        transition: background-color 0.7s ease;
+        touch-action: manipulation;
+      }
+      
+      body {
+        font-family: 'Inter', sans-serif;
+        color: #111827;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      
+      html.dark body {
+        color: #fff;
+      }
+
+      #root {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
+        position: relative;
+        z-index: 2; /* Content above background */
+      }
+
+      /* --- AMBIENT LIQUID BACKGROUND --- */
+      
+      .ambient-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        z-index: 0; /* Behind content */
+        background: var(--bg-base);
+        transition: background 0.7s ease;
+        pointer-events: none;
+      }
+
+      .blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.6;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        will-change: transform, opacity;
+        transition: background-color 0.7s ease;
+      }
+      
+      html.dark .blob {
+        opacity: 0.45; /* Slightly more subtle in dark mode */
+        mix-blend-mode: screen;
+      }
+      
+      /* Blob 1: Main Accent (Top Left) */
+      .blob-1 {
+        top: -10%;
+        left: -10%;
+        width: 70vw;
+        height: 70vw;
+        background-color: var(--blob-1);
+        animation: drift-1 20s infinite alternate;
+      }
+
+      /* Blob 2: Secondary Deep (Bottom Right) */
+      .blob-2 {
+        bottom: -10%;
+        right: -10%;
+        width: 80vw;
+        height: 80vw;
+        background-color: var(--blob-2);
+        animation: drift-2 25s infinite alternate-reverse;
+      }
+
+      /* Blob 3: Highlight (Top Right/Center) */
+      .blob-3 {
+        top: 20%;
+        right: 10%;
+        width: 60vw;
+        height: 60vw;
+        background-color: var(--blob-3);
+        animation: drift-3 22s infinite alternate;
+      }
+
+      @keyframes drift-1 {
+        0% { transform: translate(0, 0) scale(1); }
+        50% { transform: translate(10%, 15%) scale(1.1); }
+        100% { transform: translate(-5%, 20%) scale(0.95); }
+      }
+
+      @keyframes drift-2 {
+        0% { transform: translate(0, 0) rotate(0deg); }
+        100% { transform: translate(-15%, -10%) rotate(15deg); }
+      }
+
+      @keyframes drift-3 {
+        0% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+        50% { transform: translate(-15%, 10%) scale(1.2); opacity: 0.6; }
+        100% { transform: translate(10%, -15%) scale(0.9); opacity: 0.4; }
+      }
+
+      /* Noise Overlay texture */
+      .noise-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1; /* Above blobs, below content */
+        opacity: var(--noise-opacity);
+        pointer-events: none;
+        background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+        filter: contrast(120%) brightness(100%);
+        transition: opacity 0.5s ease;
+      }
+
+      /* Scrollbar Hiding */
+      ::-webkit-scrollbar {
+        width: 0;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+
+      /* Animations */
+      .fade-in {
+        animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .animate-fade-in {
+        animation: fadeInOnly 0.3s ease-out forwards;
+      }
+      @keyframes fadeInOnly {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      .liquid-reveal {
+        animation: liquidReveal 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+      @keyframes liquidReveal {
+        0% { opacity: 0; transform: scale(0.92) translateY(20px); filter: blur(8px); }
+        100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+      }
+
+      .card-enter {
+        animation: cardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      }
+      @keyframes cardEnter {
+        0% { opacity: 0; transform: translateY(20px) scale(0.96); }
+        100% { opacity: 1; transform: translateY(0) scale(1); }
+      }
+
+      .message-pop-in {
+        animation: messagePopIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        transform-origin: bottom center;
+      }
+      @keyframes messagePopIn {
+        from { opacity: 0; transform: translateY(20px) scale(0.8); filter: blur(4px); }
+        to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+      }
+
+      @keyframes availablePop {
+        0% { transform: scale(0.95) translateX(-2px); filter: blur(2px); }
+        100% { transform: scale(1) translateX(0); filter: blur(0); }
+      }
+      .available-pop {
+        animation: availablePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      }
+
+      .heart-pop {
+        animation: heartPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      @keyframes heartPop {
+        0% { transform: scale(1); }
+        25% { transform: scale(1.4); }
+        50% { transform: scale(0.9); }
+        100% { transform: scale(1); }
+      }
+
+      @keyframes nav-shake {
+        0%, 100% { transform: rotate(0deg) scale(1.1); }
+        20% { transform: rotate(-12deg) scale(1.1); }
+        40% { transform: rotate(12deg) scale(1.1); }
+        60% { transform: rotate(-8deg) scale(1.1); }
+        80% { transform: rotate(8deg) scale(1.1); }
+      }
+      .animate-nav-shake {
+        animation: nav-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+      }
+
+      @keyframes nav-pop {
+        0% { transform: scale(1); }
+        40% { transform: scale(1.3); }
+        60% { transform: scale(0.95); }
+        100% { transform: scale(1.1); }
+      }
+      .animate-nav-pop {
+        animation: nav-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+      }
+
+      @keyframes nav-bubble {
+        0% { transform: translateY(0) scale(1); }
+        30% { transform: translateY(-4px) scale(1.2, 0.85); }
+        50% { transform: translateY(-2px) scale(0.9, 1.1); }
+        100% { transform: translateY(0) scale(1.1); }
+      }
+      .animate-nav-bubble {
+        animation: nav-bubble 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+      }
+
+      @keyframes nav-spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(180deg); }
+      }
+      .animate-nav-spin {
+        animation: nav-spin 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+      }
+
+      /* Mixing Methods Animations */
+      .method-shake { animation: shake-tilt 3s ease-in-out infinite; transform-origin: center bottom; }
+      @keyframes shake-tilt {
+        0%, 100% { transform: rotate(0deg); }
+        5% { transform: rotate(-15deg); }
+        10% { transform: rotate(15deg); }
+        15% { transform: rotate(-15deg); }
+        20% { transform: rotate(15deg); }
+        25% { transform: rotate(0deg); }
+      }
+
+      .method-stir { animation: stir-rotate 6s linear infinite; transform-origin: center; }
+      @keyframes stir-rotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .method-muddle { animation: muddle-mash 2s ease-in-out infinite; transform-origin: center bottom; }
+      @keyframes muddle-mash {
+        0%, 50%, 100% { transform: translateY(0) scaleY(1); }
+        25% { transform: translateY(2px) scaleY(0.9); }
+      }
+
+      .method-build { animation: build-float 3s ease-in-out infinite; }
+      @keyframes build-float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px); }
+      }
+      
+      .method-blend { animation: blend-vibrate 2s ease-in-out infinite; }
+      @keyframes blend-vibrate {
+        0%, 100% { transform: translate(0, 0); }
+        10%, 30% { transform: translate(-1px, -1px); }
+        20%, 40% { transform: translate(1px, 1px); }
+        50% { transform: translate(0, 0); }
+      }
+
+      /* Markdown Styles */
+      .markdown p {
+        margin-bottom: 0.75rem;
+      }
+      .markdown p:last-child {
+        margin-bottom: 0;
+      }
+      .markdown ul {
+        list-style-type: disc;
+        padding-left: 1.25rem;
+        margin-bottom: 0.75rem;
+      }
+      .markdown li {
+        margin-bottom: 0.25rem;
+      }
+      .markdown strong {
+        font-weight: 700;
+        color: inherit;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              glass: {
+                100: 'rgba(255, 255, 255, 0.03)',
+                200: 'rgba(255, 255, 255, 0.07)',
+                300: 'rgba(255, 255, 255, 0.12)',
+                border: 'rgba(255, 255, 255, 0.08)',
+              },
+              deep: {
+                900: '#030508',
+                800: '#080c14',
+                accent: '#3b82f6',
+              }
+            },
+            backdropBlur: {
+              xs: '2px',
+              xl: '24px',
+            }
+          }
+        }
+      }
+    </script>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "@google/genai": "https://esm.sh/@google/genai@1.34.0",
+    "react-markdown": "https://esm.sh/react-markdown@9.0.1?bundle",
+    "react/": "https://esm.sh/react@19.0.0/",
+    "react-dom/": "https://esm.sh/react-dom@19.0.0/"
+  }
+}
+    </script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <!-- Live Ambient Background -->
+    <div class="ambient-container">
+      <div class="blob blob-1"></div>
+      <div class="blob blob-2"></div>
+      <div class="blob blob-3"></div>
+    </div>
+    
+    <!-- Texture Overlay -->
+    <div class="noise-overlay"></div>
+    
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
